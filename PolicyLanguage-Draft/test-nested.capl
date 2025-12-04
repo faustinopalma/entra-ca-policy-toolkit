@@ -1,0 +1,34 @@
+# Test nested policy - rough syntax
+
+# Complex mobile device policy
+when user is all users
+  if platform is iOS or Android
+    if device is compliant
+      then allow access with mfa
+    else
+      require app protection
+  else if platform is Windows
+    require domain joined device
+  else
+    block access
+  
+  enable this policy
+
+
+# Risk-based access
+if user risk is high or medium
+  when location is trusted
+    require mfa
+  otherwise
+    block access
+  state: enabled
+
+
+# Conditional MFA for executives
+IF user in group "Executives"
+  WHEN app is "Office 365"
+    IF location NOT trusted
+      require mfa and compliant device
+    ELSE
+      just require mfa
+  state enabled

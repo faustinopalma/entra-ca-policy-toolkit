@@ -1,0 +1,58 @@
+# Complex mobile device policy
+IF user is All
+    # Mobile platforms
+    IF platform is iOS OR platform is Android
+        IF device is Compliant
+            STATE report-only
+                REQUIRE MFA
+        ELSE
+            STATE report-only
+                REQUIRE AppProtection
+    # Windows platform
+    ELSE IF platform is Windows
+        STATE report-only
+            REQUIRE HybridJoined
+    # All other platforms
+    ELSE
+        STATE report-only
+            BLOCK
+END
+
+# Risk-based access
+IF user-risk is High
+    # Trusted locations: require MFA
+    IF location is Trusted
+        STATE enabled
+            REQUIRE MFA
+    # Non-trusted locations: block
+    ELSE
+        STATE enabled
+            BLOCK
+END
+
+IF user-risk is Medium
+    # Trusted locations: require MFA
+    IF location is Trusted
+        STATE enabled
+            REQUIRE MFA
+    # Non-trusted locations: block
+    ELSE
+        STATE enabled
+            BLOCK
+END
+
+# Conditional MFA for executives
+VAR Executives = "Executives" [00000000-0000-0000-0000-000000000000]
+
+IF user in group Executives
+    IF app is Office365
+        # Non-trusted locations: require MFA and compliant device
+        IF location NOT is Trusted
+            STATE enabled
+                REQUIRE MFA
+                REQUIRE CompliantDevice
+        # Trusted locations: require only MFA
+        ELSE
+            STATE enabled
+                REQUIRE MFA
+END

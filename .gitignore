@@ -1,0 +1,21 @@
+.env
+ConditionalAccessPolicies/
+ConditionalAccessPolicies-Text/
+ConditionalAccessPolicies-Comparison.xlsx
+ConditionalAccessPolicies-YAML/
+ConditionalAccessPolicies-ForImport/
+ConditionalAccessPolicies-Generated/
+import-results-*.csv
+
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Keep draft CAPL files (user-written)
+# PolicyLanguage-Draft/ - This should be committed
+
+# Keep validated CAPL files (LLM output can be reviewed)
+# PolicyLanguage/ - This should be committed after review

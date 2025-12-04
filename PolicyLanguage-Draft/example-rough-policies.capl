@@ -1,0 +1,33 @@
+# Sample rough policy - LLM will clean this up
+
+# Require MFA for all users accessing cloud apps
+if user is all users
+and app is all cloud apps
+then require mfa
+state: enabled
+
+
+# Block legacy authentication
+when client type is legacy authentication
+block access
+state enabled
+
+
+# Require compliant device for admins
+if user has role Global Administrator
+require device compliance
+and also require mfa
+enable this policy
+
+
+# Mobile users need app protection
+IF platform ios or android
+  THEN require approved app
+  require app protection policy
+  state = report-only
+
+
+# High risk users must change password
+when user risk level is high
+  require password change
+  state: enabled

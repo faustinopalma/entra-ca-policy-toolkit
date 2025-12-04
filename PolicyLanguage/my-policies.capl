@@ -1,0 +1,67 @@
+# My Company Conditional Access Policies
+# Replace GUIDs with actual values from your tenant
+
+# =============================================================================
+# VARIABLES - Define common GUIDs here for reuse
+# =============================================================================
+VAR BreakGlassGroup = "Emergency Access Accounts" [00000000-0000-0000-0000-000000000000]
+VAR GlobalAdminRole = "Global Administrator" [62e90394-69f5-4237-9190-012177145e10]
+VAR SecurityAdminRole = "Security Administrator" [194ae4cb-b126-40b2-bd5b-6091b380977d]
+VAR AllEmployees = "All Employees" [00000000-0000-0000-0000-000000000000]
+
+
+# =============================================================================
+# BASELINE POLICIES - Apply to all users
+# =============================================================================
+
+IF user is All
+    user NOT in group $BreakGlassGroup
+    app is All
+    STATE report-only
+        REQUIRE MFA
+END
+
+
+IF user is All
+    user NOT in group $BreakGlassGroup
+    app is All
+    client is ExchangeActiveSync OR client is Other
+    STATE enabled
+        BLOCK
+END
+
+
+# =============================================================================
+# ADMIN POLICIES - Protect privileged accounts
+# =============================================================================
+
+IF user in role $GlobalAdminRole
+    user in role $SecurityAdminRole
+    user NOT in group $BreakGlassGroup
+    app is All
+    STATE enabled
+        REQUIRE MFA
+END
+
+
+# =============================================================================
+# MOBILE POLICIES - Device management
+# =============================================================================
+
+IF user is All
+    app is Office365
+    platform is iOS OR platform is Android
+    STATE enabled
+        REQUIRE CompliantDevice
+END
+
+
+# =============================================================================
+# Add your custom policies below
+# =============================================================================
+
+# IF user is All
+#     app is All
+#     STATE report-only
+#         REQUIRE MFA
+# END

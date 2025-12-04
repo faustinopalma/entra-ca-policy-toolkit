@@ -1,0 +1,34 @@
+# Require MFA for all users accessing cloud apps
+IF user is All
+    app is All
+    STATE enabled
+        REQUIRE MFA
+END
+
+# Block legacy authentication (non-modern clients)
+IF client is Other
+    STATE enabled
+        BLOCK
+END
+
+# Require compliant device and MFA for admins
+VAR GlobalAdministrator = "Global Administrator" [00000000-0000-0000-0000-000000000000]
+
+IF user in role GlobalAdministrator [00000000-0000-0000-0000-000000000000]
+    STATE enabled
+        REQUIRE MFA
+        REQUIRE CompliantDevice
+END
+
+# Mobile users need app protection
+IF platform is iOS OR platform is Android
+    STATE report-only
+        REQUIRE ApprovedApp
+        REQUIRE AppProtection
+END
+
+# High risk users must change password
+IF user-risk is High
+    STATE enabled
+        REQUIRE PasswordChange
+END

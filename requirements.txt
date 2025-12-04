@@ -1,0 +1,6 @@
+# Python dependencies for CAPL Parser
+# Install with: python -m pip install -r requirements.txt
+
+pyyaml>=6.0
+python-dotenv>=1.0.0
+requests>=2.31.0

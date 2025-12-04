@@ -1,0 +1,237 @@
+# Conditional Access Policy Language - Nested IF-ELSE Examples
+# This file demonstrates complex nested logic patterns
+
+# Variables used in examples
+VAR BreakGlassGroup = "Emergency Access Admins" [12345678-1234-1234-1234-123456789012]
+VAR GlobalAdminRole = "Global Administrator" [62e90394-69f5-4237-9190-012177145e10]
+VAR SecurityAdminRole = "Security Administrator" [194ae4cb-b126-40b2-bd5b-6091b380977d]
+VAR ExecutiveGroup = "Executive Team" [bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb]
+VAR TrustedLocation = "Corporate Network" [11111111-1111-1111-1111-111111111111]
+VAR BYOD_Users = "BYOD Approved Users" [22222222-2222-2222-2222-222222222222]
+
+
+# =============================================================================
+# EXAMPLE 1: Mobile device access based on compliance and app
+# Based on user's example - Mobile platform logic
+# =============================================================================
+
+IF platform is iOS OR platform is Android
+    IF device is Compliant
+        IF app is Office365
+            STATE enabled
+                REQUIRE CompliantDevice
+                REQUIRE AppProtection
+        ELSE
+            # Edge/VPN or generic access
+            STATE enabled
+                REQUIRE CompliantDevice
+    ELSE
+        # Personal Mobile
+        IF user in group $BYOD_Users
+            IF app is Office365
+                STATE enabled
+                    REQUIRE AppProtection
+            ELSE
+                STATE enabled
+                    BLOCK
+        ELSE
+            STATE enabled
+                BLOCK
+END
+
+
+# =============================================================================
+# EXAMPLE 2: Workstation access based on compliance and risk
+# Based on user's example - Workstation platform logic
+# =============================================================================
+
+IF platform is Windows OR platform is macOS
+    IF device is Compliant
+        # Company Workstation
+        STATE enabled
+            REQUIRE CompliantDevice
+    ELSE
+        # Personal Workstation
+        IF user-risk is Low
+            IF client is Browser
+                STATE enabled
+                    REQUIRE MFA
+                    SESSION block-downloads
+            ELSE
+                STATE enabled
+                    BLOCK
+        ELSE
+            STATE enabled
+                BLOCK
+END
+
+
+# =============================================================================
+# EXAMPLE 3: Risk-based authentication flow
+# =============================================================================
+
+IF signin-risk is High
+    STATE enabled
+        BLOCK
+ELSE IF signin-risk is Medium
+    STATE enabled
+        REQUIRE MFA
+ELSE
+    STATE enabled
+        ALLOW
+END
+
+
+# =============================================================================
+# EXAMPLE 4: Location and platform-based access
+# =============================================================================
+
+IF location is Trusted OR location in $TrustedLocation
+    IF platform is Windows OR platform is macOS
+        STATE enabled
+            REQUIRE HybridJoined
+    ELSE IF platform is iOS OR platform is Android
+        STATE enabled
+            REQUIRE CompliantDevice
+    ELSE
+        STATE enabled
+            BLOCK
+ELSE
+    STATE enabled
+        REQUIRE MFA
+        REQUIRE CompliantDevice
+END
+
+
+# =============================================================================
+# EXAMPLE 5: Role-based access with location checks
+# =============================================================================
+
+IF user in role $GlobalAdminRole
+    user NOT in group $BreakGlassGroup
+    IF location is Trusted
+        STATE enabled
+            REQUIRE MFA
+            SESSION signin-frequency 4 hours
+    ELSE
+        STATE enabled
+            BLOCK
+ELSE
+    STATE enabled
+        REQUIRE MFA
+END
+
+
+# =============================================================================
+# EXAMPLE 6: App-specific nested logic
+# =============================================================================
+
+IF app in "Finance System" [aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa]
+    IF user in group $ExecutiveGroup
+        IF location is Trusted
+            STATE enabled
+                REQUIRE MFA
+                REQUIRE CompliantDevice
+        ELSE
+            STATE enabled
+                BLOCK
+    ELSE
+        STATE enabled
+            REQUIRE MFA
+            REQUIRE CompliantDevice
+ELSE
+    STATE enabled
+        REQUIRE MFA
+END
+
+
+# =============================================================================
+# EXAMPLE 7: Combined risk and role logic
+# =============================================================================
+
+IF user-risk is High
+    IF user in role $GlobalAdminRole OR user in role $SecurityAdminRole
+        STATE enabled
+            REQUIRE MFA
+    ELSE
+        STATE enabled
+            BLOCK
+ELSE IF user-risk is Medium
+    STATE enabled
+        REQUIRE MFA
+ELSE
+    IF user in role $GlobalAdminRole OR user in role $SecurityAdminRole
+        STATE enabled
+            REQUIRE MFA
+    ELSE
+        STATE enabled
+            ALLOW
+END
+
+
+# =============================================================================
+# EXAMPLE 8: Client type and platform nested logic
+# =============================================================================
+
+IF client is ExchangeActiveSync OR client is Other
+    STATE enabled
+        BLOCK
+ELSE
+    IF platform is iOS OR platform is Android
+        STATE enabled
+            REQUIRE AppProtection OR CompliantDevice
+    ELSE IF platform is Windows OR platform is macOS
+        STATE enabled
+            REQUIRE MFA
+    ELSE
+        STATE enabled
+            BLOCK
+END
+
+
+# =============================================================================
+# EXAMPLE 9: Guest user nested logic
+# =============================================================================
+
+IF user is Guest
+    IF app is Office365
+        IF location is Trusted
+            STATE enabled
+                REQUIRE MFA
+        ELSE
+            STATE enabled
+                BLOCK
+    ELSE
+        STATE enabled
+            BLOCK
+ELSE
+    STATE enabled
+        REQUIRE MFA
+END
+
+
+# =============================================================================
+# EXAMPLE 10: Deep nesting - 4 levels with user group, location, platform, client
+# =============================================================================
+
+IF user in group "Privileged Users" [cccccccc-cccc-cccc-cccc-cccccccccccc]
+    IF location is Trusted
+        IF platform is Windows OR platform is macOS
+            IF client is Browser
+                STATE enabled
+                    REQUIRE MFA
+            ELSE
+                STATE enabled
+                    REQUIRE MFA
+                    REQUIRE HybridJoined
+        ELSE
+            STATE enabled
+                REQUIRE MFA
+                REQUIRE CompliantDevice
+    ELSE
+        STATE enabled
+            BLOCK
+ELSE
+    STATE enabled
+        REQUIRE MFA
+END

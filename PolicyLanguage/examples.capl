@@ -1,0 +1,197 @@
+# Conditional Access Policy Language - Examples
+# This file demonstrates the CAPL syntax with real-world scenarios
+
+# =============================================================================
+# VARIABLES (Optional - for reusability)
+# =============================================================================
+VAR BreakGlassGroup = "Emergency Access Admins" [12345678-1234-1234-1234-123456789012]
+VAR GlobalAdminRole = "Global Administrator" [62e90394-69f5-4237-9190-012177145e10]
+VAR SecurityAdminRole = "Security Administrator" [194ae4cb-b126-40b2-bd5b-6091b380977d]
+VAR AllUsersGroup = "All Company Users" [87654321-4321-4321-4321-210987654321]
+
+
+# =============================================================================
+# EXAMPLE 1: Require MFA for all cloud apps
+# =============================================================================
+
+IF user is All
+    user NOT in group $BreakGlassGroup
+    app is All
+    STATE report-only
+        REQUIRE MFA
+END
+
+
+# =============================================================================
+# EXAMPLE 2: Require MFA for Administrators
+# =============================================================================
+
+IF user in role $GlobalAdminRole
+    user in role $SecurityAdminRole
+    user NOT in group $BreakGlassGroup
+    app is All
+    STATE enabled
+        REQUIRE MFA
+END
+
+
+# =============================================================================
+# EXAMPLE 3: Block legacy authentication
+# =============================================================================
+
+IF user is All
+    user NOT in group $BreakGlassGroup
+    app is All
+    client is ExchangeActiveSync OR client is Other
+    STATE enabled
+        BLOCK
+END
+
+
+# =============================================================================
+# EXAMPLE 4: Require compliant device for mobile
+# =============================================================================
+
+IF user is All
+    app is Office365
+    platform is iOS OR platform is Android
+    STATE enabled
+        REQUIRE CompliantDevice
+END
+
+
+# =============================================================================
+# EXAMPLE 5: Block access from untrusted locations for high-risk apps
+# =============================================================================
+
+IF user is All
+    user NOT in group $BreakGlassGroup
+    app in "Finance App" [aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee]
+    location NOT is Trusted
+    STATE enabled
+        BLOCK
+END
+
+
+# =============================================================================
+# EXAMPLE 6: Require MFA for guests accessing sensitive apps
+# =============================================================================
+
+IF user is Guest
+    app in "SharePoint Online" [00000003-0000-0ff1-ce00-000000000000]
+    STATE enabled
+        REQUIRE MFA
+END
+
+
+# =============================================================================
+# EXAMPLE 7: Sign-in frequency for high-risk users
+# =============================================================================
+
+IF user is All
+    user-risk is High
+    app is All
+    STATE enabled
+        REQUIRE MFA
+        SESSION signin-frequency 1 hours
+END
+
+
+# =============================================================================
+# EXAMPLE 8: Require multiple controls (AND logic)
+# =============================================================================
+
+IF user in group "Executive Team" [bbbbbbbb-cccc-dddd-eeee-ffffffffffff]
+    app in "HR System" [cccccccc-dddd-eeee-ffff-000000000000]
+    STATE enabled
+        REQUIRE MFA
+        REQUIRE CompliantDevice
+END
+
+
+# =============================================================================
+# EXAMPLE 9: Block access from specific platform
+# =============================================================================
+
+IF user in role $GlobalAdminRole
+    app in "Azure Portal" [c44b4083-3bb0-49c1-b47d-974e53cbdf3c]
+    platform is Linux
+    STATE enabled
+        BLOCK
+END
+
+
+# =============================================================================
+# EXAMPLE 10: Cloud App Security monitoring
+# =============================================================================
+
+IF user is All
+    app is All
+    STATE enabled
+        ALLOW
+        SESSION monitor with CloudAppSecurity
+END
+
+
+# =============================================================================
+# EXAMPLE 11: Complex condition with multiple exclusions
+# =============================================================================
+
+IF user is All
+    user NOT in group $BreakGlassGroup
+    user NOT in group "Trusted Device Users" [dddddddd-eeee-ffff-0000-111111111111]
+    app is All
+    location NOT is Trusted
+    STATE report-only
+        REQUIRE MFA
+END
+
+
+# =============================================================================
+# EXAMPLE 12: High risk sign-in response
+# =============================================================================
+
+IF user is All
+    signin-risk is High
+    app is All
+    STATE enabled
+        BLOCK
+END
+
+
+# =============================================================================
+# EXAMPLE 13: App protection policy for mobile devices
+# =============================================================================
+
+IF user is All
+    app is Office365
+    platform is iOS OR platform is Android
+    client is MobileApp
+    STATE enabled
+        REQUIRE AppProtection OR CompliantDevice
+END
+
+
+# =============================================================================
+# EXAMPLE 14: Browser-only access for sensitive apps
+# =============================================================================
+
+IF user is All
+    app in "Banking Portal" [eeeeeeee-ffff-0000-1111-222222222222]
+    client NOT is Browser
+    STATE enabled
+        BLOCK
+END
+
+
+# =============================================================================
+# EXAMPLE 15: Persistent browser session control
+# =============================================================================
+
+IF user is All
+    location in "Office - Shared Workstations" [ffffffff-0000-1111-2222-333333333333]
+    app is All
+    STATE enabled
+        ALLOW
+        SESSION persistent-browser never
+END

@@ -1,0 +1,21 @@
+# EXAMPLE POLICY - This file will be skipped during conversion
+# Remove this comment line to include this policy in conversion
+
+DisplayName: Example - Require MFA for Admins
+State: enabledForReportingButNotEnforced
+Conditions:
+  Users:
+    IncludeRoles:
+      - 62e90394-69f5-4237-9190-012177145e10  # Global Administrator
+      - 194ae4cb-b126-40b2-bd5b-6091b380977d  # Security Administrator
+    ExcludeUsers:
+      - your-break-glass-account-id-here
+  Applications:
+    IncludeApplications:
+      - All
+  ClientAppTypes:
+    - all
+GrantControls:
+  Operator: OR
+  BuiltInControls:
+    - mfa
