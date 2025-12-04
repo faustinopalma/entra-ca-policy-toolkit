@@ -1,0 +1,18 @@
+DisplayName: Test-Block-Untrusted-SensitiveApp
+State: enabled
+Conditions:
+  Users:
+    IncludeUsers:
+    - All
+  Applications:
+    IncludeApplications:
+    - SensitiveApp
+  Locations:
+    IncludeLocations:
+    - All
+    ExcludeLocations:
+    - AllTrusted
+GrantControls:
+  Operator: OR
+  BuiltInControls:
+  - block

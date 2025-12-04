@@ -1,0 +1,16 @@
+DisplayName: Test-CompliantDevice-AzurePortal-macOS
+State: enabled
+Conditions:
+  Users:
+    IncludeUsers:
+    - All
+  Applications:
+    IncludeApplications:
+    - AzurePortal
+  Platforms:
+    IncludePlatforms:
+    - macOS
+GrantControls:
+  Operator: OR
+  BuiltInControls:
+  - compliantDevice

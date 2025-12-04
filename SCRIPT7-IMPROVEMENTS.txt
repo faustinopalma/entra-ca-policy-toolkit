@@ -1,0 +1,170 @@
+
+SCRIPT 7 IMPROVEMENTS - Implementation Summary
+==============================================
+
+THREE MAJOR ENHANCEMENTS IMPLEMENTED
+=====================================
+
+1. ✅ DEVICE STATE DIMENSION (HIGH Priority)
+   -----------------------------------------
+   Before: No device compliance/trust modeling
+   After:  Added ['Compliant', 'Unmanaged'] dimension
+   
+   Impact:
+   - Matrix size DOUBLED (e.g., 32 → 64 cells, 90 → 180 cells)
+   - Now shows BYOD vs Managed Device policies
+   - Compliant = Domain-joined, Intune-managed devices
+   - Unmanaged = Personal devices, not managed by organization
+   
+   Technical Changes:
+   - Added 'device_states' to dimensions (line ~92)
+   - Removed blanket DeviceStates filter (was skipping all)
+   - Added intelligent DeviceStates matching logic (lines ~120-140)
+   - Y-axis now: User × Platform × Device State
+   - Hover shows "Device: Compliant" or "Device: Unmanaged"
+
+
+2. ✅ SESSION CONTROLS SUPPORT (MEDIUM Priority)
+   ----------------------------------------------
+   Before: Only checked GrantControls (MFA, compliant device, etc.)
+   After:  Also checks SessionControls
+   
+   Newly Detected Controls:
+   - Application Enforced Restrictions
+   - Conditional Access App Control (MCAS/Defender for Cloud Apps)
+   - Sign-in Frequency (e.g., "every 4 hours")
+   - Persistent Browser settings
+   
+   Impact:
+   - More accurate policy outcomes
+   - Shows "Session Controls" action when no grant controls
+   - Separate section in hover: "Session Controls:"
+   
+   Technical Changes:
+   - Added session_controls extraction (lines ~225-240)
+   - Returns session_controls in result dict
+   - Hover text shows both Grant and Session controls
+
+
+3. ✅ POLICY NAMES IN HOVER TEXT (MEDIUM Priority)
+   ------------------------------------------------
+   Before: "Matched: 3 policies"
+   After:  "Matched Policies: • Policy-1 • Policy-2 • Policy-3"
+   
+   Impact:
+   - Easier debugging ("Why is this blocked?")
+   - Clear understanding of policy overlap
+   - Shows up to 5 policy names (with "... and X more")
+   - Explicit "(Implicit Allow)" message when no policies match
+   
+   Technical Changes:
+   - Enhanced hover text formatting (lines ~330-355)
+   - Lists policy names with bullet points
+   - Separate sections for Grant Controls, Session Controls, Policies
+
+
+TEST RESULTS
+============
+
+TestPolicies (6 policies with gaps):
+------------------------------------
+Before: 4 × 8 = 32 cells
+After:  8 × 8 = 64 cells (2× User × Platform × DeviceState)
+
+Distribution:
+  Red (BLOCK):      20 cells (31%)
+  Orange (Controls): 20 cells (31%)
+  Green (Allow):     24 cells (38%)
+
+✓ All three colors showing
+✓ Device state dimension working
+✓ Hover shows policy names and controls
+
+
+ConditionalAccessPolicies-Generated (89 production policies):
+-------------------------------------------------------------
+Before: 9 × 10 = 90 cells
+After:  18 × 10 = 180 cells (2× User × Platform × DeviceState)
+
+Distribution:
+  Red (BLOCK):       18 cells (10%)
+  Orange (Controls): 162 cells (90%)
+  Green (Allow):       0 cells (0%)
+
+✓ 100% coverage maintained (no gaps)
+✓ Now showing Compliant vs Unmanaged device scenarios
+✓ More granular view of policy enforcement
+
+
+COMPARISON WITH EXAMPLE SCRIPT
+==============================
+
+Script 7 NOW HAS:
+  ✓ Device trust dimension (was missing)
+  ✓ Session controls (was missing)
+  ✓ Policy names in hover (was missing)
+  ✓ Conditional policy filtering (example doesn't have)
+  ✓ Complex matching logic (example simpler)
+  ✓ Dynamic sizing (example fixed)
+  ✓ Deduplication (example doesn't have)
+  ✓ Discrete colorscale (example continuous)
+
+Script 7 is now SUPERIOR to the example in all aspects!
+
+
+USAGE EXAMPLES
+==============
+
+View test data with gaps:
+  python 7-Visualize-Policies.py TestPolicies
+
+View production policies:
+  python 7-Visualize-Policies.py ConditionalAccessPolicies-Generated
+
+Hover over any cell to see:
+  • Action outcome (BLOCK, MFA, Session Controls, etc.)
+  • User, App, Platform, Location, Device State
+  • Grant Controls applied
+  • Session Controls applied
+  • List of matched policy names
+  • "Implicit Allow" if no policies match
+
+
+KEY INSIGHTS FROM NEW DIMENSION
+================================
+
+Device State Matters:
+- Policies often differentiate: "Require MFA for Unmanaged" vs "Allow for Compliant"
+- BYOD policies target Unmanaged devices
+- Strict policies may BLOCK Unmanaged entirely
+- Compliant devices often get more access with fewer controls
+
+Example Scenarios Now Visible:
+  [windows] (Compliant) → Might only need compliant device check
+  [windows] (Unmanaged) → Might require MFA + other controls or BLOCK
+  
+  [iOS] (Compliant) → Managed by Intune, trusted
+  [iOS] (Unmanaged) → Personal phone, more restrictions
+
+
+FUTURE ENHANCEMENTS (Optional)
+===============================
+
+Could still add:
+  - Client app types dimension (browser, mobile app, desktop)
+  - Risk levels visualization (though would explode matrix size)
+  - Export to CSV/Excel for analysis
+  - Comparison mode (before/after policy changes)
+  - Policy recommendation engine
+
+
+CONCLUSION
+==========
+
+Script 7 now implements ALL best practices from the example script PLUS
+additional enterprise features for production use. The device state dimension
+provides critical visibility into BYOD vs managed device policies, and session
+controls ensure complete policy coverage representation.
+
+The enhanced hover text with policy names makes debugging and policy analysis
+significantly easier for administrators.

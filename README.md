@@ -233,6 +233,45 @@ python 6-Parse-CAPL-To-YAML.py
 - Generates YAML policies in `ConditionalAccessPolicies-Generated/`
 - Then continue with step 3 (YAML to JSON) and step 4 (import)
 
+**Step 7: Visualize Policy Coverage (Static PNG)**
+```powershell
+.\.venv\Scripts\Activate.ps1
+
+# Auto-detect folder
+python 7-Visualize-Policies.py
+
+# Or specify a folder explicitly
+python 7-Visualize-Policies.py ConditionalAccessPolicies-YAML
+```
+- Creates static 2D matrix visualization
+- Outputs: `policy-visualization.png`
+- Shows most common 2 dimensions (usually User × Application)
+- **Accepts folder path argument** to visualize any policy set
+- Limitations: Can't show all condition types in 2D
+
+**Step 8: Interactive Policy Matrix (Recommended)**
+```powershell
+.\.venv\Scripts\Activate.ps1
+
+# Auto-detect folder (prefers Generated, then YAML, then original)
+python 8-Interactive-Policy-Matrix.py
+
+# Or specify a folder explicitly
+python 8-Interactive-Policy-Matrix.py ConditionalAccessPolicies-YAML
+python 8-Interactive-Policy-Matrix.py ConditionalAccessPolicies-Generated
+python 8-Interactive-Policy-Matrix.py ConditionalAccessPolicies
+```
+- Creates interactive "What If" policy matrix using Plotly
+- Uses actual policy evaluation logic (not projection)
+- Hierarchical axes: User×Platform vs Application×Location
+- Hover over cells to see matched policies and effective controls
+- Outputs: `policy-matrix-interactive.html` (opens in browser automatically)
+- **Accepts folder path argument** to visualize any policy set
+- Color coding:
+  - 🟥 **Red**: BLOCK
+  - 🟨 **Amber**: MFA/Compliant/Controls
+  - 🟩 **Green**: Allow (implicit)
+
 See `PolicyLanguage/README.md` for complete CAPL syntax documentation and examples.
 
 ## Scripts Reference
@@ -249,6 +288,7 @@ See `PolicyLanguage/README.md` for complete CAPL syntax documentation and exampl
 | `4b-Import-PoliciesFromJSON.ps1` | Create policies in tenant | JSON in `ForImport/` | Policies + CSV results |
 | `5-Validate-CAPL-With-LLM.py` | Validate rough CAPL with LLM | CAPL in `PolicyLanguage-Draft/` | Validated CAPL in `PolicyLanguage/` |
 | `6-Parse-CAPL-To-YAML.py` | Parse CAPL to YAML | CAPL in `PolicyLanguage/` | YAML in `ConditionalAccessPolicies-Generated/` |
+| `7-Visualize-Policies.py` | Interactive "What If" policy matrix | YAML policies | `policy-matrix-interactive.html` |
 
 ## Tips and Best Practices
 

@@ -1,0 +1,22 @@
+DisplayName: Test-Block-Mobile-Risk
+State: enabled
+Conditions:
+  Users:
+    IncludeUsers:
+    - All
+  Applications:
+    IncludeApplications:
+    - All
+  Platforms:
+    IncludePlatforms:
+    - iOS
+    - android
+  Locations:
+    IncludeLocations:
+    - All
+    ExcludeLocations:
+    - AllTrusted
+GrantControls:
+  Operator: OR
+  BuiltInControls:
+  - block

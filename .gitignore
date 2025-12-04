@@ -7,6 +7,9 @@ ConditionalAccessPolicies-ForImport/
 ConditionalAccessPolicies-Generated/
 import-results-*.csv
 
+# Visualization outputs
+policy-matrix-interactive.html
+
 # Python virtual environment
 .venv/
 __pycache__/

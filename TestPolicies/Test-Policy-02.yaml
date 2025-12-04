@@ -1,0 +1,16 @@
+DisplayName: Test-MFA-Office365-Windows
+State: enabled
+Conditions:
+  Users:
+    IncludeUsers:
+    - All
+  Applications:
+    IncludeApplications:
+    - Office365
+  Platforms:
+    IncludePlatforms:
+    - windows
+GrantControls:
+  Operator: OR
+  BuiltInControls:
+  - mfa

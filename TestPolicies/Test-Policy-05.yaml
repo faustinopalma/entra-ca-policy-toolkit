@@ -1,0 +1,19 @@
+DisplayName: Test-MFA-Trusted-iOS
+State: enabled
+Conditions:
+  Users:
+    IncludeUsers:
+    - All
+  Applications:
+    IncludeApplications:
+    - All
+  Platforms:
+    IncludePlatforms:
+    - iOS
+  Locations:
+    IncludeLocations:
+    - AllTrusted
+GrantControls:
+  Operator: OR
+  BuiltInControls:
+  - mfa
