@@ -99,6 +99,13 @@ class PolicyParser:
         # Device compliance: Critical for BYOD vs managed device policies
         result['device_states'] = ['Compliant', 'Unmanaged']
         
+        # Risks: Critical for Identity Protection policies
+        result['user_risks'] = ['No Risk', 'High']
+        result['signin_risks'] = ['No Risk', 'High']
+        
+        # Client Types: Browser vs Apps vs Legacy
+        result['client_types'] = ['Browser', 'Mobile/Desktop', 'Legacy']
+        
         return result
 
 
@@ -116,20 +123,25 @@ class GridEvaluator:
         # we should NOT match it (it's conditional on things we're not showing)
         # This prevents "All users + All apps + SignInRisk=high -> BLOCK" from blocking everything
         
-        # Check for conditions we DON'T model in the matrix
+        # Check Client Types
         if 'ClientAppTypes' in conditions:
-            # Only skip if it's restrictive (not "all")
-            client_types = conditions['ClientAppTypes']
-            if client_types and 'all' not in client_types:
-                # Policy is conditional on specific client types - skip it
-                return False
-        if 'UserRiskLevels' in conditions:
-            # Policy is conditional on user risk - skip it  
-            return False
-        if 'SignInRiskLevels' in conditions:
-            # Policy is conditional on sign-in risk - skip it
-            return False
-        
+            policy_types = conditions['ClientAppTypes']
+            # If policy has 'all', it matches everything
+            if policy_types and 'all' not in policy_types:
+                scenario_client = scenario.get('client_type', 'Browser')
+                
+                # Map scenario to policy values
+                match = False
+                if scenario_client == 'Browser' and 'browser' in policy_types:
+                    match = True
+                elif scenario_client == 'Mobile/Desktop' and 'mobileAppsAndDesktopClients' in policy_types:
+                    match = True
+                elif scenario_client == 'Legacy' and ('exchangeActiveSync' in policy_types or 'otherClients' in policy_types):
+                    match = True
+                
+                if not match:
+                    return False
+
         # Device states: NOW MODELED - check if it matches scenario
         if 'DeviceStates' in conditions:
             device_states = conditions['DeviceStates']
@@ -153,6 +165,31 @@ class GridEvaluator:
                 if include_states and ('Compliant' in include_states or 'DomainJoined' in include_states):
                     # Policy requires compliant/domain-joined, but we're unmanaged
                     return False
+        
+        # User Risk
+        if 'UserRiskLevels' in conditions:
+            policy_risks = [r.lower() for r in conditions['UserRiskLevels']]
+            scenario_risk = scenario.get('user_risk', 'No Risk').lower()
+            
+            if scenario_risk == 'no risk':
+                # Policy requires risk, but we have none -> No match
+                return False
+            
+            # If scenario is 'high', it matches if 'high' (or 'medium'/'low' if we want to be strict, but usually high covers high)
+            # For now, exact match on 'high'
+            if scenario_risk not in policy_risks:
+                return False
+
+        # Sign-in Risk
+        if 'SignInRiskLevels' in conditions:
+            policy_risks = [r.lower() for r in conditions['SignInRiskLevels']]
+            scenario_risk = scenario.get('signin_risk', 'No Risk').lower()
+            
+            if scenario_risk == 'no risk':
+                return False
+            
+            if scenario_risk not in policy_risks:
+                return False
         
         # Now check the conditions we DO model
         
@@ -301,22 +338,60 @@ class InteractiveVisualizer:
         x_axis_labels = []
         y_axis_labels = []
         
-        # Y-axis: User × Platform × Device State
+        # Y-axis: User × Platform × Device State × Risks
         y_combinations = []
         for user in dimensions['users']:
             for platform in dimensions['platforms']:
                 for device_state in dimensions['device_states']:
+                    # To prevent matrix explosion, we'll only test "High Risk" scenarios 
+                    # if there are actually policies that use risk.
+                    # But for completeness, let's do a smart combination.
+                    
+                    # Base scenario (No Risk)
                     label = f"{user}<br>[{platform}] ({device_state})"
                     y_axis_labels.append(label)
-                    y_combinations.append({'user': user, 'platform': platform, 'device_state': device_state})
+                    y_combinations.append({
+                        'user': user, 
+                        'platform': platform, 
+                        'device_state': device_state,
+                        'user_risk': 'No Risk',
+                        'signin_risk': 'No Risk'
+                    })
+                    
+                    # High User Risk scenario
+                    label_ur = f"{user}<br>[{platform}] ({device_state})<br>⚠️ User Risk: High"
+                    y_axis_labels.append(label_ur)
+                    y_combinations.append({
+                        'user': user, 
+                        'platform': platform, 
+                        'device_state': device_state,
+                        'user_risk': 'High',
+                        'signin_risk': 'No Risk'
+                    })
+                    
+                    # High Sign-in Risk scenario
+                    label_sr = f"{user}<br>[{platform}] ({device_state})<br>⚠️ Sign-in Risk: High"
+                    y_axis_labels.append(label_sr)
+                    y_combinations.append({
+                        'user': user, 
+                        'platform': platform, 
+                        'device_state': device_state,
+                        'user_risk': 'No Risk',
+                        'signin_risk': 'High'
+                    })
         
-        # X-axis: Application × Location
+        # X-axis: Application × Client Type × Location
         x_combinations = []
         for app in dimensions['applications']:
-            for location in dimensions['locations']:
-                label = f"{app}<br>({location})"
-                x_axis_labels.append(label)
-                x_combinations.append({'application': app, 'location': location})
+            for client_type in dimensions['client_types']:
+                for location in dimensions['locations']:
+                    label = f"{app}<br>[{client_type}]<br>({location})"
+                    x_axis_labels.append(label)
+                    x_combinations.append({
+                        'application': app, 
+                        'client_type': client_type,
+                        'location': location
+                    })
         
         # Build matrix
         data_matrix = []
@@ -337,9 +412,15 @@ class InteractiveVisualizer:
                 hover_text = f"<b>{result['action']}</b><br>"
                 hover_text += f"User: {scenario['user']}<br>"
                 hover_text += f"App: {scenario['application']}<br>"
+                hover_text += f"Client: {scenario['client_type']}<br>"
                 hover_text += f"Platform: {scenario['platform']}<br>"
                 hover_text += f"Location: {scenario['location']}<br>"
                 hover_text += f"Device: {scenario['device_state']}<br>"
+                
+                if scenario.get('user_risk') == 'High':
+                    hover_text += f"User Risk: High<br>"
+                if scenario.get('signin_risk') == 'High':
+                    hover_text += f"Sign-in Risk: High<br>"
                 
                 if result['controls']:
                     hover_text += f"<br><b>Grant Controls:</b><br>"
@@ -410,12 +491,12 @@ class InteractiveVisualizer:
         
         fig.update_layout(
             title={
-                'text': "Conditional Access Policy Coverage Map<br><sub>User × Platform × Device State → Application × Location</sub>",
+                'text': "Conditional Access Policy Coverage Map<br><sub>User × Platform × Device × Risk → Application × Client × Location</sub>",
                 'x': 0.5,
                 'xanchor': 'center'
             },
-            xaxis_title="<b>Application × Location</b>",
-            yaxis_title="<b>User × Platform × Device State</b>",
+            xaxis_title="<b>Application × Client × Location</b>",
+            yaxis_title="<b>User × Platform × Device × Risk</b>",
             height=max(800, len(y_labels) * 20),  # Adjusted for more rows
             width=max(1200, len(x_labels) * 50),
             xaxis=dict(
